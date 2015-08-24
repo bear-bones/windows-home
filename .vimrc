@@ -4,18 +4,24 @@
 " again
 if has('win32') || has('win64')
     let $SEP = '\'
-    let vimdir = 'vimfiles'
+    if $HOME =~ '/'  " unix-style paths means running under msysgit
+        let vimdir = '.vim'
+        source ~/.gvimrc
+    else
+        let vimdir = 'vimfiles'
+    endif
 else " *nix
     let $SEP = '/'
     let vimdir = '.vim'
     source ~/.vim/scripts/termcap.vim
 endif
 
-" path handling
+" translate any path to the correct version for the current OS
 function! Path(path)
-    let path = substitute(a:path, '^C:', '', '')    " remove leading C:
-    let path = substitute(path, '[/\\]', $SEP, 'g') " / or \ become $SEP
-    let path = substitute(path, '^\\', 'C:\', '')   " leading \ becomes C:\ 
+    let path = substitute(a:path, '^C:', '', 'i')       " remove leading C:
+    let path = substitute(path, '^c:', '', '')          " remove leading c:
+    let path = substitute(path, '[/\\]\+', $SEP, 'g')   " / or \ => $SEP
+    let path = substitute(path, '^\\', 'C:\', '')       " leading \ => C:\ 
     return path
 endfunction
 
@@ -108,30 +114,16 @@ nnoremap <silent> # #zz
 nnoremap <silent> g* g*zz
 nnoremap <silent> g# g#zz
 
-" just smash `jk` (or `kj`) instead of stretching for escape
+" just smash `jk` instead of stretching for escape
 inoremap jk <esc>
-inoremap kj <esc>
 inoremap <leader>jk jk
-inoremap <leader>kj kj
 inoremap <esc> <nop>
 
 
-" if os has clipboard, yank etc to clipboard instead of register
-if has("clipboard")
-    vnoremap y "*y
-    nnoremap yy "*yy
-    vnoremap d "*d
-    nnoremap dd "*dd
-    vnoremap x "*x
-    nnoremap x "*x
-    vnoremap p "*p
-    nnoremap p "*p
-endif
-
 " quick save/quit: ZZ saves, ZX saves and quits, ZQ quits without saving
-inoremap ZZ <esc>:w<cr>a
-inoremap ZX <esc>ZZ
-inoremap ZQ <esc>ZQ
+inoremap ZZ <c-o>:w<cr>
+inoremap ZX <c-o>ZZ
+inoremap ZQ <c-o>ZQ
 nnoremap ZZ :w<cr>
 nnoremap ZX ZZ
 " nnoremap ZQ ZQ -- ZQ has default behavior in normal mode
@@ -173,13 +165,16 @@ colorscheme dessert
 set ruler
 
 " show file name in terminal title bar
+set titlestring=%(%{expand(\"$LOGNAME\")=='root'?'root':''}@%)%{expand(\"$HOSTNAME\")}:%{expand(\"%:p:h\")}%=%{expand(\"%:t\")}%(\ [%M%R]%)"
 set title
 
 " show line numbers as distance from cursor
 set relativenumber
 
-" no text wrapping
-set nowrap
+" line wrapping
+set wrap
+set showbreak=>>>\ 
+set display=lastline
 
 " show line of current cursor (in current window only)
 set cursorline
@@ -189,16 +184,16 @@ augroup currentline
     autocmd WinEnter * set cursorline
 augroup end
 
-" highlight 80th column
-set colorcolumn=80
+" highlight columns 80n
 function! ToggleCC()
-    if &colorcolumn == 0
-        set colorcolumn=80
+    if stridx(&colorcolumn, '80') != 0
+        set colorcolumn=80,160,240,320,400,480,560,640,720,800
     else
         set colorcolumn=0
     endif
 endfunction
 nnoremap <silent> <leader>cc :call ToggleCC()<cr>
+call ToggleCC()
 
 " show matching brackets (thanks Doug)
 set showmatch
